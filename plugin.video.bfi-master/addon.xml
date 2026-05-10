@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.bfi" name="BFI Player" version="1.5.2" provider-name="eartisan-uk">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0"/>
+        <import addon="script.module.routing" version="0.2.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.6.0"/>
+        <import addon="script.module.requests" version="2.22.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="main.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">Search and play free movies and shorts from the BFI collection</summary>
+        <description lang="en_GB">Showing the best from the BFI, national and regional archives - including 120 years of Britain on film.</description>
+        <language>en</language>
+        <platform>all</platform>
+        <license>MIT</license>
+        <website>https://player.bfi.org.uk/free</website>
+        <source>https://github.com/eartisan-uk/plugin.video.bfi</source>
+        <news>v1.5.2 - Fix Collections (BS4 None-attrs bug: h3/p with class="dark" were silently skipped)
+v1.5.1 - Fix Collections (collection-card HTML), remove defunct Stream/Bandwidth setting, hide The Cut/BFI Replay, new menu icons
+v1.5.0 - UI overhaul: Subscription sub-menu (Exclusives, Recently Added, Kermode, Popular, Collections, Coming Soon), Free sub-menu (Popular, Inside Film, Shorts, Collections), Watchlist (Account)
+v1.4.1 - Fix subscriber video playback: correct Brightcove account (6057940601001) and MLNFA1L1R DRM player extracted from script tags
+v1.4.0 - BFI+ subscriber login (email/password); session cookies persisted across Kodi restarts
+v1.3.0 - Kodi 21 (Omega) compatibility: Python 3, Brightcove player support (replaces defunct Ooyala)
+v1.2.0 (21-7-19) - Updated "The Cut" to include extra videos</news>
+        <disclaimer lang="en_GB">>Neither this addon nor its author are in anyway affiliated with the British Film Institute</disclaimer>
+        <assets>
+            <icon>resources/icon.png</icon>
+            <fanart>resources/fanart.jpg</fanart>
+        </assets>
+    </extension>
+</addon>

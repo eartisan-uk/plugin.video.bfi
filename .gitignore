@@ -1,0 +1,23 @@
+# Previous release archives — kept locally but not tracked in git
+previous-versions/
+
+# Output of the old make_zip.py (root-level convenience zip)
+plugin.video.bfi.zip
+
+# Kodi session cookie — contains login credentials, must never be committed
+plugin.video.bfi-master/session.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDEs
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Note: kodi-repo/**/*.zip IS intentionally committed — Kodi fetches
+# those files directly from GitHub raw URLs when installing the addon.

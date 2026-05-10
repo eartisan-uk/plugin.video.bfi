@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="repository.eartisan.bfi" name="BFI Player Repository" version="1.0.0" provider-name="eartisan-uk">
+    <extension point="xbmc.addon.repository" name="BFI Player Repository">
+        <info compressed="false">https://raw.githubusercontent.com/eartisan-uk/plugin.video.bfi/main/kodi-repo/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/eartisan-uk/plugin.video.bfi/main/kodi-repo/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/eartisan-uk/plugin.video.bfi/main/kodi-repo/</datadir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_GB">BFI Player Repository</summary>
+        <description lang="en_GB">Repository hosting the BFI Player Kodi addon — browse and play content from the BFI Player streaming platform.</description>
+        <platform>all</platform>
+        <license>MIT</license>
+        <source>https://github.com/eartisan-uk/plugin.video.bfi</source>
+        <news>v1.0.0 - Initial release</news>
+    </extension>
+</addon>

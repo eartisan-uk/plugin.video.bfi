@@ -1,0 +1,79 @@
+v1.5.2
+- Fix Collections (root cause): BS4 coerces None attrs to {'class': None} which
+  requires h3/p to have NO class — but BFI's collection cards use class="dark";
+  changed JIG collections_overview title/plot to use {} so any h3/p is matched
+
+v1.5.1
+- Fix Collections: overview pages use collection-card HTML (not film-card); added
+  collections_overview JIG key and updated both sub-menus to pass the correct key
+- Updated ku.art() to fall back through data-img-200/285/344 so collection tile
+  artwork resolves (portrait images, not the widescreen 800px used by film cards)
+- Remove defunct Stream/Bandwidth setting (fed the dead Ooyala fallback URL only;
+  has no effect on current Brightcove playback)
+- Hide The Cut and BFI Replay from menus (code retained for future use)
+- New menu icons: subscription, free, exclusives, recently-added, coming-soon,
+  inside-film, shorts (generate via resources/media/make_icons.py)
+- Remove unused icons home.png and new.png
+- Bump version to 1.5.1
+
+v1.5.0
+- UI overhaul: structured top-level menu with Subscription and Free sub-menus
+- Subscription sub-menu: Exclusives, Recently Added, Kermode Introduces, Popular,
+  Collections, Coming Soon
+- Free sub-menu: Popular, Inside Film, Shorts, Collections
+- Watchlist: fetches /account/watchlist with auth; parses .card/.card__action
+  structure (different from film-card used elsewhere)
+- New parse_card() helper for account-page card format
+- Auth cookies now auto-attached to /account/ URLs as well as /subscription/
+- New localised strings 32038-32045
+- Settings Menu category simplified to match new structure
+- Bump version to 1.5.0
+
+v1.4.1
+- Fix subscriber video playback: correct Brightcove account (6057940601001) and
+  MLNFA1L1R DRM player extracted from script tags rather than HTML attributes
+- Bump version to 1.4.1
+
+v1.4.0
+- BFI+ subscriber login (email/password via Settings > Account)
+- Session cookies persisted to special://userdata/addon_data/plugin.video.bfi/session.json
+- Login endpoint: POST /user/login?_format=json (Drupal JSON API)
+- New auth.py module; login/logout routes in plugin.py
+- settings.xml: new Account category with email, password, Sign In, Sign Out
+- New localised strings 32027-32037
+- Bump version to 1.4.0
+
+v1.3.0
+- Kodi 21 (Omega) / Python 3 compatibility fixes
+- Bumped xbmc.python requirement to 3.0.0
+- Replaced defunct Ooyala player (shut down ~2022) with Brightcove support
+- Fixed xbmc.translatePath -> xbmcvfs.translatePath (removed in Kodi 19)
+- Fixed xbmc.log UnicodeEncodeError handler (unnecessary in Python 3)
+- Bundled cache module (cache.py) — removes dependency on script.module.cache
+- Bump version to 1.3.0
+
+v1.2.0
+- Updated to use script.module.cache
+- Fixes duration when parsing collection items
+- Added all genres when parsing collection items
+- Added "clear searches" to settings
+- Added "Save recently viewed" option to settings
+- Added additional short videos to "The Cut" selection
+- Added "Kermode Introduces" menu and videos
+- Amends recently viewed to show image, description, etc.
+
+v1.1.0
+- Python 3 compatible
+- Removed hardcoded special URLs
+
+v1.0.3
+- Fixes relative image URLs
+
+v1.0.2
+- Scraper update to reflect changes on BFI website
+
+v1.0.1
+- Small bug fix
+
+v1.0.0
+- Initial version
