@@ -73,6 +73,7 @@ def add_menu_item(method, label, **kwargs):
         )])
     if method == play_film:
         list_item.setProperty("IsPlayable", "true")
+        kwargs["directory"] = False
     xbmcplugin.addDirectoryItem(
         plugin.handle,
         plugin.url_for(method, **args),
