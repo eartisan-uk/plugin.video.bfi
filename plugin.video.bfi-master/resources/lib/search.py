@@ -639,3 +639,124 @@ def get_json(url):
         elif 304 == r.status_code:
             c.touch(url, r.headers)
             return json.loads(cached["blob"])
+
+
+def scrape_film_details(href):
+    # type: (str) -> dict
+    """Scrape the film detail page for rich metadata.
+
+    Returns a dict with keys: title, plot, plotoutline, director, cast, genre,
+    year, duration, country, language, mpaa, fanart, trailer_video_id,
+    trailer_account_id, trailer_player_id, in_watchlist, film_entity_id,
+    watchlist_url. Missing fields are omitted.
+    """
+    url = get_page_url(href)
+    soup = get_html(url)
+    if not soup:
+        return {}
+
+    result = {}
+
+    # Title
+    h1 = soup.find("h1")
+    if h1:
+        span = h1.find("span", "film-title__maintitle")
+        result["title"] = (span or h1).get_text(strip=True)
+
+    # Hero fanart from page header
+    header = soup.find("header", {"data-component-id": "nuplayer:film_page_header"})
+    if header:
+        hero = header.find("img", loading="lazy")
+        if hero:
+            src = hero.get("src", "")
+            if src and not src.startswith("http"):
+                src = BFI_URI + src
+            if src:
+                result["fanart"] = src
+
+    # BBFC rating
+    bbfc = soup.find("img", {"data-component-id": "nuplayer:bbfc_rating"})
+    if bbfc:
+        result["mpaa"] = bbfc.get("alt", "").replace(" rating", "").strip()
+
+    # Metadata summary (genre, year, duration, director, country, language)
+    summary = soup.find("div", "film-metadata-summary")
+    if summary:
+        g = summary.find("div", {"aria-label": "Genre"})
+        if g:
+            result["genre"] = [g.get_text(strip=True)]
+        y = summary.find("div", {"aria-label": "Release Date"})
+        if y:
+            try:
+                result["year"] = int(y.get_text(strip=True))
+            except (ValueError, TypeError):
+                pass
+        d = summary.find("div", {"aria-label": "Duration"})
+        if d:
+            result["duration"] = duration_to_seconds(d.get_text(strip=True))
+        for p in summary.find_all("p"):
+            if "Directed by" in p.get_text():
+                a = p.find("a")
+                result["director"] = a.get_text(strip=True) if a else \
+                    p.get_text(strip=True).replace("Directed by", "").strip()
+                break
+        c = summary.find("div", {"aria-label": "Country of Origin"})
+        if c:
+            result["country"] = c.get_text(strip=True)
+        lang = summary.find("div", {"aria-label": "Language"})
+        if lang:
+            result["language"] = lang.get_text(strip=True)
+
+    # Film description
+    film_desc = soup.find("div", "film-description")
+    if film_desc:
+        sf = film_desc.find("p", "standfirst")
+        if sf:
+            result["plotoutline"] = sf.get_text(strip=True)
+        paras = [p.get_text(strip=True) for p in film_desc.find_all("p") if p.get_text(strip=True)]
+        if paras:
+            result["plot"] = "\n\n".join(paras)
+
+    # Full metadata section (cast, full genre list, certificate)
+    meta = soup.find("div", {"data-component-id": "nuplayer:film_page_metadata"})
+    if meta:
+        featuring = meta.find("dd", "featuring")
+        if featuring:
+            result["cast"] = [a.get_text(strip=True) for a in featuring.find_all("a")]
+        genres_dd = meta.find("dd", "genres")
+        if genres_dd:
+            result["genre"] = [a.get_text(strip=True) for a in genres_dd.find_all("a")]
+        if "mpaa" not in result:
+            cert_dd = meta.find("dd", "certificate")
+            if cert_dd:
+                cert_img = cert_dd.find("img")
+                if cert_img:
+                    result["mpaa"] = cert_img.get("alt", "").replace(" rating", "").strip()
+
+    # Trailer credentials — button.js__trailer carries data-video-id and data_ac (BFI HTML typo)
+    trailer_btn = soup.find("button", "js__trailer")
+    if trailer_btn:
+        t_vid = trailer_btn.get("data-video-id", "")
+        t_ac = trailer_btn.get("data_ac", "") or trailer_btn.get("data-ac", "")
+        if t_vid:
+            result["trailer_video_id"] = t_vid
+            result["trailer_account_id"] = t_ac
+            t_vjs = soup.find(attrs={"data-bundle": "trailer", "data-pid": True})
+            result["trailer_player_id"] = t_vjs.get("data-pid", "hndK61Wvr") if t_vjs else "hndK61Wvr"
+
+    # Watchlist state — div class encodes current state and film entity ID
+    wl_div = soup.find("div", {"data-component-id": "nuplayer:watchlist_button"})
+    if wl_div:
+        classes = wl_div.get("class", [])
+        result["in_watchlist"] = "watchlist--remove" in classes
+        for cls in classes:
+            if cls.startswith("js-flag-watchlist-"):
+                result["film_entity_id"] = cls.replace("js-flag-watchlist-", "")
+                break
+        wl_btn = wl_div.find("button")
+        if wl_btn:
+            btn_href = wl_btn.get("href", "")
+            if btn_href:
+                result["watchlist_url"] = get_page_url(btn_href)
+
+    return result

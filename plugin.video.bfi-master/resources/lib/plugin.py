@@ -4,6 +4,7 @@ __author__ = "fraser"
 
 import logging
 
+import requests
 import routing
 import xbmc
 import xbmcaddon
@@ -129,12 +130,11 @@ def parse_search_results(data, query, offset):
             "duration": int(duration) * 60 if duration else 0,
             "mediatype": "video"
         }
-        add_menu_item(play_film,
+        add_menu_item(show_film,
                       title,
                       args={"href": data.get("url")},
                       art=ku.art("", data.get("image", ["Default.png"])[0]),
-                      info=info,
-                      directory=False)
+                      info=info)
 
 
 def parse_card(card):
@@ -290,13 +290,12 @@ def the_cut():
             if not title:
                 continue
             img_tag = card.find("img")
-            add_menu_item(play_film,
+            add_menu_item(show_film,
                           title,
                           args={"href": card_href},
                           info={"mediatype": "video",
                                 "plot": plot_tag.text.strip() if plot_tag else ""},
-                          art=ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {}),
-                          directory=False)
+                          art=ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {}))
         xbmcplugin.setContent(plugin.handle, "videos")
     xbmcplugin.setPluginCategory(plugin.handle, category)
     xbmcplugin.endOfDirectory(plugin.handle)
@@ -409,12 +408,11 @@ def show_watchlist():
         if not result:
             continue
         href, title, info, art = result
-        add_menu_item(play_film,
+        add_menu_item(show_film,
                       title,
                       args={"href": href},
                       art=art,
-                      info=info,
-                      directory=False)
+                      info=info)
         found = True
     if not found:
         # Watchlist is empty — show a friendly placeholder
@@ -459,12 +457,12 @@ def show_category():
         # ku.art() falls back through all sizes so both card types resolve correctly.
         img_tag = card.find("img")
         art = ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {})
-        add_menu_item(show_category if sub_directory else play_film,
+        add_menu_item(show_category if sub_directory else show_film,
                       title,
-                      args={"href": card_href, "title": title, "target": target},
+                      args={"href": card_href, "title": title},
                       art=art,
                       info=info,
-                      directory=sub_directory)
+                      directory=True)
     xbmcplugin.setPluginCategory(plugin.handle, category)
     xbmcplugin.setContent(plugin.handle, "videos")
     xbmcplugin.addSortMethod(plugin.handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
@@ -474,61 +472,164 @@ def show_category():
     xbmcplugin.endOfDirectory(plugin.handle)
 
 
+@plugin.route("/show")
+def show_film():
+    # type: () -> None
+    """Film detail screen: Watch Now, Trailer (if available), Watchlist toggle."""
+    href = get_arg("href")
+    details = bfis.scrape_film_details(href)
+    if not details:
+        return
+
+    title = details.get("title") or get_arg("title", "")
+    info = {
+        "title": title,
+        "originaltitle": title,
+        "plot": details.get("plot", ""),
+        "plotoutline": details.get("plotoutline", ""),
+        "director": details.get("director", ""),
+        "cast": details.get("cast", []),
+        "genre": ", ".join(details.get("genre", [])),
+        "year": details.get("year", 0),
+        "duration": details.get("duration", 0),
+        "country": details.get("country", ""),
+        "mpaa": details.get("mpaa", ""),
+        "mediatype": "movie",
+    }
+    art = {}
+    fanart = details.get("fanart", "")
+    if fanart:
+        art["fanart"] = fanart
+
+    def _add_playable(label, extra_args=None):
+        item = ListItem(label)
+        item.setInfo("video", info)
+        item.setArt(art)
+        item.setProperty("IsPlayable", "true")
+        args = {"href": href}
+        if extra_args:
+            args.update(extra_args)
+        xbmcplugin.addDirectoryItem(plugin.handle, plugin.url_for(play_film, **args), item, False)
+
+    _add_playable("Watch Now")
+
+    trailer_id = details.get("trailer_video_id", "")
+    if trailer_id:
+        _add_playable("Watch Trailer", {
+            "video_id": trailer_id,
+            "account_id": details.get("trailer_account_id", ""),
+            "player_id": details.get("trailer_player_id", "hndK61Wvr"),
+        })
+
+    wl_url = details.get("watchlist_url", "")
+    if wl_url and bfi_auth.is_logged_in():
+        in_wl = details.get("in_watchlist", False)
+        wl_label = "Remove from Watchlist" if in_wl else "Add to Watchlist"
+        wl_item = ListItem(wl_label)
+        wl_item.setInfo("video", info)
+        wl_item.setArt(art)
+        xbmcplugin.addDirectoryItem(
+            plugin.handle,
+            plugin.url_for(toggle_watchlist, watchlist_url=wl_url),
+            wl_item,
+            False
+        )
+
+    xbmcplugin.setPluginCategory(plugin.handle, title)
+    xbmcplugin.setContent(plugin.handle, "videos")
+    xbmcplugin.endOfDirectory(plugin.handle)
+
+
+@plugin.route("/watchlist_toggle")
+def toggle_watchlist():
+    # type: () -> None
+    """Toggle watchlist by calling the BFI flag/unflag URL (contains CSRF token)."""
+    watchlist_url = get_arg("watchlist_url")
+    if not watchlist_url:
+        return
+    cookies = bfi_auth.get_session_cookies()
+    if not cookies:
+        ku.notification(ADDON_NAME, ku.localize(32033), time=4000)
+        return
+    try:
+        resp = requests.get(
+            watchlist_url,
+            cookies=cookies,
+            headers={"Accept": "application/json"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            ku.notification(ADDON_NAME, "Watchlist updated")
+        else:
+            ku.notification(ADDON_NAME, "Watchlist update failed ({})".format(resp.status_code))
+    except Exception as exc:
+        ku.notification(ADDON_NAME, str(exc))
+    xbmc.executebuiltin("Container.Refresh")
+
+
 @plugin.route("/film")
 def play_film():
     # type: () -> None
     """Attempts to find the m3u8 file for a given href and play it"""
     url = bfis.get_page_url(get_arg("href"))
-    video_id = get_arg("video_id")  # pre-set when coming from recents
+    video_id = get_arg("video_id")
+    explicit_account = get_arg("account_id")  # set by show_film for trailers
+    explicit_player = get_arg("player_id")    # set by show_film for trailers
     target = get_arg("target")
-    soup = bfis.get_html(url)
 
-    # Extract ALL Brightcove credentials from the already-fetched soup.
-    # This avoids a second HTTP round-trip inside get_brightcove_url() which
-    # was returning None because BFI's page differs between a cached/first
-    # fetch and a subsequent bare requests.get().
-    account_id = ""
-    player_id = "default"
+    if explicit_account and explicit_player and video_id:
+        # Explicit credentials provided (trailer) — skip page fetch and subscriber override
+        account_id = explicit_account
+        player_id = explicit_player
+    else:
+        soup = bfis.get_html(url)
 
-    video_tag = (
-        soup.find("video-js", attrs={PLAYER_ID_ATTR: True}) or
-        soup.find("video", attrs={PLAYER_ID_ATTR: True}) or
-        soup.find(True, attrs={PLAYER_ID_ATTR: True, PLAYER_ACCOUNT_ATTR: True})
-    )
-    if video_tag:
-        account_id = video_tag.get(PLAYER_ACCOUNT_ATTR, "")
-        player_id = video_tag.get(PLAYER_PLAYER_ATTR, "default")
-        if not video_id:
-            video_id = video_tag.get(PLAYER_ID_ATTR, "")
-    elif not video_id:
-        # Fallback for target-based lookup (e.g. Kermode Introduces)
-        el = soup.find(id=target) if target else soup.find(True, attrs={PLAYER_ID_ATTR: True})
-        if el:
-            video_id = el.get(PLAYER_ID_ATTR, "")
+        # Extract ALL Brightcove credentials from the already-fetched soup.
+        # This avoids a second HTTP round-trip inside get_brightcove_url() which
+        # was returning None because BFI's page differs between a cached/first
+        # fetch and a subsequent bare requests.get().
+        account_id = ""
+        player_id = "default"
 
-    # data-account and data-player are injected by JavaScript so they may be
-    # absent from static HTML. Fall back to BFI's known Brightcove credentials.
-    if not account_id:
-        account_id = bfis.BFI_BRIGHTCOVE_ACCOUNT_ID
-    if player_id == "default":
-        player_id = bfis.BFI_BRIGHTCOVE_PLAYER_ID
+        video_tag = (
+            soup.find("video-js", attrs={PLAYER_ID_ATTR: True}) or
+            soup.find("video", attrs={PLAYER_ID_ATTR: True}) or
+            soup.find(True, attrs={PLAYER_ID_ATTR: True, PLAYER_ACCOUNT_ATTR: True})
+        )
+        if video_tag:
+            account_id = video_tag.get(PLAYER_ACCOUNT_ATTR, "")
+            player_id = video_tag.get(PLAYER_PLAYER_ATTR, "default")
+            if not video_id:
+                video_id = video_tag.get(PLAYER_ID_ATTR, "")
+        elif not video_id:
+            # Fallback for target-based lookup (e.g. Kermode Introduces)
+            el = soup.find(id=target) if target else soup.find(True, attrs={PLAYER_ID_ATTR: True})
+            if el:
+                video_id = el.get(PLAYER_ID_ATTR, "")
 
-    # For subscriber pages, the video-js data attributes may point at the wrong
-    # Brightcove account (6057949427001 instead of the subscriber account
-    # 6057940601001). The <script> tags are the authoritative source — parse
-    # them to get the correct account ID, player ID, and actual video ID.
-    if "/subscription/" in url:
-        sub_account, sub_player, sub_video = bfis.extract_subscriber_credentials(soup)
-        if sub_account and sub_video:
-            account_id = sub_account
-            player_id = sub_player
-            video_id = sub_video
-            logger.debug("play_film: subscriber override: account=%s player=%s video=%s",
-                         account_id, player_id, video_id)
+        # data-account and data-player are injected by JavaScript so they may be
+        # absent from static HTML. Fall back to BFI's known Brightcove credentials.
+        if not account_id:
+            account_id = bfis.BFI_BRIGHTCOVE_ACCOUNT_ID
+        if player_id == "default":
+            player_id = bfis.BFI_BRIGHTCOVE_PLAYER_ID
+
+        # For subscriber pages, the video-js data attributes may point at the wrong
+        # Brightcove account (6057949427001 instead of the subscriber account
+        # 6057940601001). The <script> tags are the authoritative source — parse
+        # them to get the correct account ID, player ID, and actual video ID.
+        if "/subscription/" in url:
+            sub_account, sub_player, sub_video = bfis.extract_subscriber_credentials(soup)
+            if sub_account and sub_video:
+                account_id = sub_account
+                player_id = sub_player
+                video_id = sub_video
+                logger.debug("play_film: subscriber override: account=%s player=%s video=%s",
+                             account_id, player_id, video_id)
 
     logger.debug("play_film: video_id=%s account_id=%s player_id=%s", video_id, account_id, player_id)
     if video_id:
-        if bfis.RECENT_SAVED:
+        if bfis.RECENT_SAVED and not explicit_account:
             bfis.recents.append((url, video_id))
         stream = bfis.get_stream_info(video_id, account_id=account_id, player_id=player_id, page_url=url)
         logger.debug("play_film: stream=%s", stream)
