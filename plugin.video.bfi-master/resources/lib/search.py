@@ -479,12 +479,19 @@ def _parse_brightcove_sources(data, policy_key=""):
     dash_source = None
     hls_source = None
     fallback = None
+    best_width = 0
+    best_height = 0
     for source in data.get("sources", []):
         src = source.get("src", "")
         if not src:
             continue
         mime = source.get("type", "")
         ks = source.get("key_systems", {})
+        w = source.get("width", 0)
+        h = source.get("height", 0)
+        if w and h and w > best_width:
+            best_width = w
+            best_height = h
         if mime == "application/dash+xml":
             if not dash_source:
                 license_url = ""
@@ -514,6 +521,9 @@ def _parse_brightcove_sources(data, policy_key=""):
             fallback = {"url": src, "manifest_type": "hls", "license_url": "", "policy_key": ""}
 
     result = dash_source or hls_source or fallback
+    if result and best_width and best_height:
+        result["width"] = best_width
+        result["height"] = best_height
     xbmc.log("[BFI] stream result: {}".format(result), xbmc.LOGDEBUG)
     return result
 

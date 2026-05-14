@@ -540,6 +540,15 @@ def play_film():
 
             list_item = ListItem(path=stream_url)
 
+            width = stream.get("width", 0)
+            height = stream.get("height", 0)
+            if width and height:
+                list_item.addStreamInfo("video", {
+                    "width": width,
+                    "height": height,
+                    "aspect": float(width) / float(height),
+                })
+
             if manifest_type == "mpd":
                 # DASH + Widevine DRM — requires inputstream.adaptive and Widevine CDM
                 list_item.setProperty("inputstream", "inputstream.adaptive")
