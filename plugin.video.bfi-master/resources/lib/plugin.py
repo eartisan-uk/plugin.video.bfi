@@ -568,6 +568,7 @@ def play_film():
                 list_item.setMimeType("application/x-mpegURL")
                 list_item.setContentLookup(False)
 
+            xbmc.PlayList(xbmc.PLAYLIST_VIDEO).clear()
             xbmcplugin.setResolvedUrl(plugin.handle, True, list_item)
 
 

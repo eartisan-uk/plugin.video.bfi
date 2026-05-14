@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.bfi" name="BFI Player" version="1.5.3" provider-name="eartisan-uk">
+<addon id="plugin.video.bfi" name="BFI Player" version="1.5.4" provider-name="eartisan-uk">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
         <import addon="script.module.routing" version="0.2.0"/>
@@ -17,7 +17,8 @@
         <license>MIT</license>
         <website>https://player.bfi.org.uk/free</website>
         <source>https://github.com/eartisan-uk/plugin.video.bfi</source>
-        <news>v1.5.3 - Fix autoplay: set isFolder=False on playable items so Kodi stops queuing siblings; add aspect ratio stream hint for correct display on FireTV and other media devices
+        <news>v1.5.4 - Fix autoplay: clear video playlist before resolving stream so Kodi cannot advance to next item
+v1.5.3 - Fix autoplay: set isFolder=False on playable items so Kodi stops queuing siblings; add aspect ratio stream hint for correct display on FireTV and other media devices
 v1.5.2 - Fix Collections (BS4 None-attrs bug: h3/p with class="dark" were silently skipped)
 v1.5.1 - Fix Collections (collection-card HTML), remove defunct Stream/Bandwidth setting, hide The Cut/BFI Replay, new menu icons
 v1.5.0 - UI overhaul: Subscription sub-menu (Exclusives, Recently Added, Kermode, Popular, Collections, Coming Soon), Free sub-menu (Popular, Inside Film, Shorts, Collections), Watchlist (Account)
