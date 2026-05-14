@@ -501,9 +501,9 @@ def show_film():
     if fanart:
         art["fanart"] = fanart
 
-    def _add_playable(label, extra_args=None):
+    def _add_playable(label, item_info, extra_args=None):
         item = ListItem(label)
-        item.setInfo("video", info)
+        item.setInfo("video", item_info)
         item.setArt(art)
         item.setProperty("IsPlayable", "true")
         args = {"href": href}
@@ -511,11 +511,14 @@ def show_film():
             args.update(extra_args)
         xbmcplugin.addDirectoryItem(plugin.handle, plugin.url_for(play_film, **args), item, False)
 
-    _add_playable("Watch Now")
+    _add_playable("Watch Now", info)
 
     trailer_id = details.get("trailer_video_id", "")
     if trailer_id:
-        _add_playable("Watch Trailer", {
+        trailer_info = dict(info)
+        trailer_info["title"] = title + " - Trailer"
+        trailer_info["duration"] = 0
+        _add_playable("Watch Trailer", trailer_info, {
             "video_id": trailer_id,
             "account_id": details.get("trailer_account_id", ""),
             "player_id": details.get("trailer_player_id", "hndK61Wvr"),
