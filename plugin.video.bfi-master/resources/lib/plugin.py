@@ -361,6 +361,11 @@ def show_watchlist():
     soup = bfis.get_html(bfis.get_page_url("account/watchlist"), use_auth=True)
     if not soup:
         return
+    if bfis.is_login_page(soup):
+        bfi_auth.logout()
+        ku.notification(ADDON_NAME, ku.localize(32046), time=6000)
+        ku.show_settings()
+        return
     found = False
     jig = JIG["subscription"]
     for card in soup.find_all(*jig["card"]):

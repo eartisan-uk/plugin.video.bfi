@@ -568,6 +568,18 @@ def get_page_url(href):
     return href if href.startswith("http") else "{}{}".format(BFI_URI, href.lstrip("/"))
 
 
+def is_login_page(soup):
+    # type: (Any) -> bool
+    """Returns True when the BFI site served the sign-in page instead of the requested content.
+    This happens when session cookies have expired — the site returns HTTP 200 but with the
+    login page HTML, so status-code checks alone can't detect it.
+    """
+    if soup is None:
+        return False
+    title = soup.find("title")
+    return bool(title and "Sign in" in title.text)
+
+
 def cache_clear():
     # type: () -> None
     with Cache() as c:

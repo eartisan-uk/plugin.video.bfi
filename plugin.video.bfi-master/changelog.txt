@@ -1,3 +1,8 @@
+v1.5.8
+- Fix watchlist: detect expired BFI session (site returns HTTP 200 with login page when
+  cookies expire); auto-clear stale session and prompt re-login with "Session expired"
+  notification
+
 v1.5.7
 - Fix watchlist card parsing: update selector to match BFI site redesign (film-card
   elements); watchlist now correctly lists films

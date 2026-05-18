@@ -199,3 +199,7 @@ msgstr ""
 msgctxt "#32045"
 msgid "BFI Replay"
 msgstr ""
+
+msgctxt "#32046"
+msgid "Session expired. Please sign in again."
+msgstr ""
