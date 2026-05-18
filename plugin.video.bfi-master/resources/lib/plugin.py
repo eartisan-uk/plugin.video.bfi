@@ -138,6 +138,44 @@ def parse_search_results(data, query, offset):
 
 
 
+def parse_card(card):
+    # type: (Any) -> Optional[tuple]
+    """Parse a watchlist .card element into (href, title, info, art).
+
+    The /account/watchlist page uses a different HTML structure from subscription
+    listing pages: link is <a class="card__action">, meta chips are
+    <span class="card__info__item">.  Returns None when the card is unusable.
+    """
+    link = card.find("a", "card__action")
+    if not link:
+        return None
+    href = link.get("href", "")
+    if not href:
+        return None
+    title = link.get("aria-label", "").strip()
+    if not title:
+        span = link.find("span", "h-e")
+        if span:
+            inner = span.find("span")
+            title = inner.text.strip() if inner else span.text.strip()
+    if not title:
+        return None
+    info = {"genre": [], "mediatype": "video"}
+    for item in card.find_all("span", "card__info__item"):
+        text = item.text.strip()
+        if not text:
+            continue
+        if text.isdigit():
+            info["year"] = int(text)
+        elif "min" in text.lower():
+            info["duration"] = bfis.duration_to_seconds(text)
+        else:
+            info["genre"].append(text)
+    img_tag = card.find("img")
+    art = ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {})
+    return href, title, info, art
+
+
 @plugin.route("/clear/<idx>")
 def clear(idx):
     # type: (str) -> None
@@ -367,23 +405,14 @@ def show_watchlist():
         ku.show_settings()
         return
     found = False
-    jig = JIG["subscription"]
-    for card in soup.find_all(*jig["card"]):
-        card_href = card.get("href", "")
-        if not card_href:
+    for card in soup.find_all("div", "card"):
+        result = parse_card(card)
+        if not result:
             continue
-        title_tag = card.find(*jig["title"])
-        title = title_tag.text.strip() if title_tag else card.get("aria-label", "").strip()
-        if not title:
-            continue
-        plot_tag = card.find(*jig["plot"])
-        info = {"plot": plot_tag.text.strip() if plot_tag else "", "genre": []}
-        bfis.parse_meta_info(card.find_all(*jig["meta"]), info)
-        img_tag = card.find("img")
-        art = ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {})
+        href, title, info, art = result
         add_menu_item(show_film,
                       title,
-                      args={"href": card_href},
+                      args={"href": href},
                       art=art,
                       info=info)
         found = True

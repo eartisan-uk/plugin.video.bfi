@@ -1,3 +1,8 @@
+v1.5.9
+- Fix watchlist listing: restore div.card / a.card__action parser (watchlist page never
+  used film-card elements); v1.5.7 misidentified the HTML structure and removed the
+  correct parse_card() helper — restored here
+
 v1.5.8
 - Fix watchlist: detect expired BFI session (site returns HTTP 200 with login page when
   cookies expire); auto-clear stale session and prompt re-login with "Session expired"
