@@ -20,6 +20,7 @@ update the next time it checks the repository.
 
 import hashlib
 import os
+import shutil
 import zipfile
 from xml.etree import ElementTree as ET
 
@@ -105,6 +106,9 @@ plugin_version = build_zip(ADDON_SRC, ADDON_ID, plugin_out_dir)
 print("\n=== Building repository addon zip ===")
 repo_out_dir = os.path.join(REPO_OUT, REPO_ID)
 repo_version = build_zip(REPO_ADDON, REPO_ID, repo_out_dir)
+repo_zip_name = "{}-{}.zip".format(REPO_ID, repo_version)
+shutil.copy2(os.path.join(repo_out_dir, repo_zip_name), os.path.join(BASE_DIR, repo_zip_name))
+print("  Copied to root:", os.path.join(BASE_DIR, repo_zip_name))
 
 print("\n=== Generating addons.xml ===")
 addons_xml_path = os.path.join(REPO_OUT, "addons.xml")
