@@ -1,3 +1,25 @@
+v1.5.7
+- Fix watchlist card parsing: update selector to match BFI site redesign (film-card
+  elements); watchlist now correctly lists films
+
+v1.5.6
+- Fix detail screen: trailer list item now shows a distinct title and no duration;
+  skin-assigned title is film title for Watch Now, film title + " - Trailer" for Watch Trailer
+
+v1.5.5
+- Film detail screen: clicking a title opens Watch Now / Watch Trailer / Add to Watchlist
+  sub-menu before playing; full metadata (plot, cast, director, country, certificate)
+  scraped from BFI film page; trailers and watchlist require BFI+ subscription
+
+v1.5.4
+- Fix autoplay: clear video playlist before resolving stream so Kodi cannot advance to
+  next item; bump version to 1.5.4
+
+v1.5.3
+- Fix autoplay: set isFolder=False on playable items so Kodi stops queuing siblings
+- Add aspect ratio stream hint for correct display on FireTV and other media devices
+- Bump version to 1.5.3
+
 v1.5.2
 - Fix Collections (root cause): BS4 coerces None attrs to {'class': None} which
   requires h3/p to have NO class — but BFI's collection cards use class="dark";
