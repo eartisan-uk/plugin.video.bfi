@@ -176,6 +176,29 @@ def parse_card(card):
     return href, title, info, art
 
 
+def parse_film_card(card):
+    # type: (Any) -> Optional[tuple]
+    """Parse a watchlist <a class="film-card"> element into (href, title, info, art).
+
+    Since ~Sep 2026 /account/watchlist uses the same film-card markup as listing
+    pages, but the plot lives in <div class="description">.  Returns None when
+    the card is unusable.
+    """
+    href = card.get("href", "")
+    if not href:
+        return None
+    title_tag = card.find("span", "field--name-title")
+    title = title_tag.text.strip() if title_tag else card.get("aria-label", "").strip()
+    if not title:
+        return None
+    plot_tag = card.find("div", "description") or card.find("p", {"data-component-id": "nuplayer:details"})
+    info = {"plot": plot_tag.text.strip() if plot_tag else "", "genre": []}
+    bfis.parse_meta_info(card.find_all("li", {"data-component-id": "nuplayer:chip"}), info)
+    img_tag = card.find("img")
+    art = ku.art(bfis.BFI_URI, img_tag.attrs if img_tag else {})
+    return href, title, info, art
+
+
 @plugin.route("/clear/<idx>")
 def clear(idx):
     # type: (str) -> None
@@ -405,8 +428,11 @@ def show_watchlist():
         ku.show_settings()
         return
     found = False
-    for card in soup.find_all("div", "card"):
-        result = parse_card(card)
+    # BFI has switched watchlist markup between div.card and a.film-card; support both
+    cards = [(c, parse_film_card) for c in soup.find_all("a", "film-card")]
+    cards += [(c, parse_card) for c in soup.find_all("div", "card")]
+    for card, parser in cards:
+        result = parser(card)
         if not result:
             continue
         href, title, info, art = result

@@ -1,3 +1,7 @@
+v1.5.10
+- Fix watchlist listing: BFI switched /account/watchlist to a.film-card markup; add
+  parse_film_card() and accept both film-card and div.card layouts
+
 v1.5.9
 - Fix watchlist listing: restore div.card / a.card__action parser (watchlist page never
   used film-card elements); v1.5.7 misidentified the HTML structure and removed the
